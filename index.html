@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de la Vida - Conway</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            margin-top: 20px;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        button {
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Juego de la Vida de Conway</h1>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div class="controls">
+        <button id="startBtn">Iniciar</button>
+        <button id="pauseBtn">Pausar</button>
+        <button id="resetBtn">Reiniciar</button>
+        <button id="clearBtn">Limpiar</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const resolution = 10;
+        const COLS = canvas.width / resolution;
+        const ROWS = canvas.height / resolution;
+
+        let grid = createGrid(ROWS, COLS);
+        let interval;
+        let running = false;
+
+        function createGrid(rows, cols) {
+            return new Array(rows).fill(null).map(() => new Array(cols).fill(0));
+        }
+
+        function nextGen(grid) {
+            const nextGrid = createGrid(ROWS, COLS);
+            for (let row = 0; row < grid.length; row++) {
+                for (let col = 0; col < grid[row].length; col++) {
+                    const cell = grid[row][col];
+                    const numNeighbors = countNeighbors(grid, row, col);
+                    if (cell === 1 && (numNeighbors < 2 || numNeighbors > 3)) {
+                        nextGrid[row][col] = 0;
+                    } else if (cell === 0 && numNeighbors === 3) {
+                        nextGrid[row][col] = 1;
+                    } else {
+                        nextGrid[row][col] = cell;
+                    }
+                }
+            }
+            return nextGrid;
+        }
+
+        function countNeighbors(grid, x, y) {
+            let sum = 0;
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    const row = (x + i + ROWS) % ROWS;
+                    const col = (y + j + COLS) % COLS;
+                    sum += grid[row][col];
+                }
+            }
+            sum -= grid[x][y];
+            return sum;
+        }
+
+        function drawGrid(grid) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let row = 0; row < grid.length; row++) {
+                for (let col = 0; col < grid[row].length; col++) {
+                    const cell = grid[row][col];
+                    ctx.beginPath();
+                    ctx.rect(col * resolution, row * resolution, resolution, resolution);
+                    ctx.fillStyle = cell ? 'black' : 'white';
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function initializePattern() {
+            grid[10][10] = 1; 
+			grid[10][11] = 1; 
+			grid[10][9] = 1; 
+			grid[9][10] = 1; 
+			grid[11][11] = 1;
+        }
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const col = Math.floor(x / resolution);
+            const row = Math.floor(y / resolution);
+            grid[row][col] = grid[row][col] ? 0 : 1;
+            drawGrid(grid);
+        });
+
+        // Controles
+        document.getElementById('startBtn').addEventListener('click', () => {
+            if (!running) {
+                interval = setInterval(() => {
+                    grid = nextGen(grid);
+                    drawGrid(grid);
+                }, 100);
+                running = true;
+            }
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            clearInterval(interval);
+            running = false;
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            clearInterval(interval);
+            running = false;
+            grid = createGrid(ROWS, COLS);
+            initializePattern();
+            drawGrid(grid);
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            clearInterval(interval);
+            running = false;
+            grid = createGrid(ROWS, COLS);
+            drawGrid(grid);
+        });
+
+        // Inicializar el canvas
+        initializePattern();
+        drawGrid(grid);
+    </script>
+</body>
+</html>
